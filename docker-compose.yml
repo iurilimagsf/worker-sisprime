@@ -1,0 +1,66 @@
+# =============================================================================
+# Docker Compose - Messaging Standalone SIFEN
+# =============================================================================
+# Uso:
+#   1. Copie .env.example para .env e configure as variáveis
+#   2. Execute: docker compose up -d
+#   3. Acompanhe logs: docker compose logs -f worker
+#
+# Para escalar workers:
+#   docker compose up -d --scale worker=3
+#
+# Painel RabbitMQ: http://localhost:15672 (usuário/senha do .env)
+# =============================================================================
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # RabbitMQ - Broker de mensagens
+  # ---------------------------------------------------------------------------
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    hostname: rabbitmq
+    ports:
+      - "${RABBITMQ_EXTERNAL_PORT:-5672}:5672"      # AMQP
+      - "${RABBITMQ_MGMT_PORT:-15672}:15672"         # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-guest}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - sifen_net
+
+  # ---------------------------------------------------------------------------
+  # Worker - Processamento de faturas SIFEN
+  # ---------------------------------------------------------------------------
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      # Força o RabbitMQ a usar o hostname do serviço Docker
+      RABBITMQ_HOST: rabbitmq
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - sifen_net
+
+volumes:
+  rabbitmq_data:
+    driver: local
+
+networks:
+  sifen_net:
+    driver: bridge

@@ -1,0 +1,41 @@
+# =============================================================================
+# Docker Ignore - Messaging Standalone SIFEN
+# =============================================================================
+
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.egg-info
+dist
+build
+.eggs
+
+# Ambiente virtual
+venv
+.venv
+env
+
+# IDE
+.vscode
+.idea
+.cursor
+*.swp
+*.swo
+
+# Docker (não precisa copiar para dentro da imagem)
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Documentação
+*.md
+
+# Variáveis de ambiente (injetadas via docker-compose env_file)
+.env
+.env.*
+!.env.example
